@@ -77,6 +77,10 @@ services:
       GATEWAY_PORT: "4001"
       GENERATED_DIR: "/app/generated"
       DASHBOARD_URL: "http://dashboard:3900"
+      # [Sua sau Phase 8 test that tren VPS sach, 2026-09-24] Bi thieu o ban
+      # dau, khien zalo-gateway crash ngay luc khoi dong (services/gateway/
+      # index.js:32 bat buoc bien nay, khong co gia tri mac dinh trong code).
+      DATA_DIR: "/app/data"
     volumes:
       - zalo-creds:/root/.zalo-agent-cli
       - generated-files:/app/generated
