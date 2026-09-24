@@ -138,6 +138,12 @@ set_if_missing OPENROUTER_IMAGE_MODEL ""
 set_if_missing DASHBOARD_PASSWORD "$(gen_secret_hex 12)"
 set_if_missing ZALO_ALLOWED_USERS ""
 set_if_missing BOT_NAME "Bot"
+# Ghi lai 2 bien nay vao .env (khong chi export tam trong phien chay script
+# nay) - de moi lan sau chay "docker compose ..." truc tiep (vd ho tro ky
+# thuat, hoac co che cap nhat Phase 11) khong con bi canh bao "bien chua
+# duoc dat" va khong vo tinh dung sai namespace/tag mac dinh.
+set_if_missing GHCR_NAMESPACE "$GHCR_NAMESPACE"
+set_if_missing IMAGE_TAG "$IMAGE_TAG"
 
 # Kiem tra bat buoc: neu ZALO_ALLOWED_USERS van rong SAU buoc tren, canh
 # bao ro (khong chan cai dat — khach co the thiet lap sau qua wizard Phase
