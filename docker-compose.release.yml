@@ -11,12 +11,19 @@
 #     duy nhat, liet ke tuong minh trong "environment:", KHONG dung
 #     "env_file: .env" cho hermes-brain de tranh bom toan bo bi mat he thong
 #     vao container ma model chay lenh terminal - xem Phase 5 rui ro Critical).
-#   - ZALO_ALLOW_ALL_USERS=true (gia tri tam thoi nguy hiem cua ban dev) doi
-#     thanh ZALO_ALLOWED_USERS=${ZALO_ALLOWED_USERS} (installer Phase 6 dien
-#     dung UID chu bot that cua tung khach). Them GATEWAY_ALLOW_ALL_USERS=false
-#     tuong minh lam lop phong thu thu 2 (lop thu 1 la entrypoint.sh tu ep lai
-#     gia tri an toan trong config.yaml moi lan khoi dong - xem Phase 3 audit
-#     finding #9/#3).
+#   - [SUA 2026-09-24, phat hien qua test that voi tai khoan Zalo thu 2]
+#     GIU NGUYEN ZALO_ALLOW_ALL_USERS=true giong het ban dev - da thu doi
+#     sang ZALO_ALLOWED_USERS=<UID chu> nhung phat hien framework Hermes
+#     KHONG co khai niem "danh sach nhom duoc phep" rieng cho Zalo (khac
+#     Telegram) - dat allowlist nay khoa CA nhom, khien nguoi khong phai
+#     chu @tag bot trong nhom nhan duoc yeu cau "pairing" qua dong lenh ky
+#     thuat (hermes pairing approve...) thay vi duoc tro chuyen binh thuong.
+#     Xac nhan qua doc thang gateway/authz_mixin.py: khong co bien
+#     ZALO_GROUP_ALLOWED_USERS nao ca. Phan bao ve THAT SU cho lenh quan
+#     tri (tam dung/bat-tat tool/quen mat khau) va du lieu MAT nam o TANG
+#     KHAC (services/gateway/index.js, so sanh isOwner voi bot-control.json,
+#     DOC LAP hoan toan voi bien nay) - da test that qua Zalo, hoat dong
+#     dung. Nen KHONG can ZALO_ALLOWED_USERS nua.
 #   - dashboard publish port ra "0.0.0.0" thay vi chi "127.0.0.1" (Validation
 #     2026-09-24: khach tu truy cap tu xa qua mo cong + tuong lua + mat khau
 #     manh, khong dung SSH tunnel/Cloudflare Tunnel cho ban dau tien).
@@ -112,14 +119,17 @@ services:
       - HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD}
       - DASHBOARD_URL=http://dashboard:3900
       - ZALO_SCOPED_TOKEN=${ZALO_SCOPED_TOKEN}
-      # [Sua Phase 3/4, thay ZALO_ALLOW_ALL_USERS=true cua ban dev] Chi dung
-      # UID chu bot that, installer (Phase 6) bat buoc dien - khong duoc de
-      # trong/mac dinh mo.
-      - ZALO_ALLOWED_USERS=${ZALO_ALLOWED_USERS}
-      # Lop phong thu thu 2 chan duong leo thang qua config.yaml (Phase 3
-      # audit finding #9/#3) - tuong minh dat false, entrypoint.sh (da bake
-      # vao image) con tu ep lai gia tri nay trong config.yaml moi lan khoi
-      # dong du phia nao ghi de.
+      # [Sua lai 2026-09-24 - xem giai thich chi tiet dau file] Giong het
+      # ban dev, la lop DUY NHAT quyet dinh "AI co tro chuyen voi nguoi nay
+      # khong" - KHONG lien quan gi toi lenh quan tri/du lieu MAT (tang
+      # khac, xem gateway/index.js isOwner). Khong con ZALO_ALLOWED_USERS.
+      - ZALO_ALLOW_ALL_USERS=true
+      # Lop phong thu chan duong leo thang qua config.yaml (Phase 3 audit
+      # finding #9/#3) - tuong minh dat false, entrypoint.sh (da bake vao
+      # image) con tu ep lai gia tri nay trong config.yaml moi lan khoi
+      # dong du phia nao ghi de. Bien nay KHAC ZALO_ALLOW_ALL_USERS o tren -
+      # day la "khoa du phong toan cuc", khong anh huong hanh vi binh
+      # thuong vi ZALO_ALLOW_ALL_USERS=true da duoc kiem TRUOC no.
       - GATEWAY_ALLOW_ALL_USERS=false
       - TZ=Asia/Ho_Chi_Minh
     volumes:

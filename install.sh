@@ -81,13 +81,6 @@ else
   fi
   [ -n "$BOT_NAME_INPUT" ] || die "Ten bot khong duoc de trong."
 
-  if [ -n "${INSTALL_OWNER_UID+x}" ]; then
-    OWNER_UID_INPUT="$INSTALL_OWNER_UID"
-  else
-    printf 'UID Zalo cua chu bot - NEU CHUA BIET, de trong va nhan Enter (se thiet lap sau qua Dashboard): '
-    read -r OWNER_UID_INPUT < /dev/tty
-  fi
-
   if [ -n "${INSTALL_DASHBOARD_PASSWORD+x}" ]; then
     DASHBOARD_PASSWORD_INPUT="$INSTALL_DASHBOARD_PASSWORD"
   else
@@ -113,7 +106,6 @@ set_if_missing() {
 # Bien nguoi dung vua nhap (chi co gia tri o lan cai dat dau, cac lan sau
 # bien tren khong ton tai nen khong ghi de gi ca — dung set_if_missing).
 [ -n "${BOT_NAME_INPUT:-}" ] && set_if_missing BOT_NAME "$BOT_NAME_INPUT"
-[ -n "${OWNER_UID_INPUT:-}" ] && set_if_missing ZALO_ALLOWED_USERS "$OWNER_UID_INPUT"
 [ -n "${DASHBOARD_PASSWORD_INPUT:-}" ] && set_if_missing DASHBOARD_PASSWORD "$DASHBOARD_PASSWORD_INPUT"
 
 # Cac khoa bi mat — CHI sinh neu chua co dong nao (an toan khi chay lai).
@@ -133,13 +125,19 @@ set_if_missing ZALO_CLI_MODE "real"
 # mo qua HTTP thuong (khong TLS), "true" khien trinh duyet am tham khong luu
 # phien dang nhap, khach dang nhap xong bi bat nguoc ve /login ngay lap tuc.
 set_if_missing COOKIE_SECURE "false"
+# [Sua lai lan 2, 2026-09-24 - phat hien qua test that voi tai khoan Zalo
+# thu 2] PHAI la "true", giong het ban dev - Hermes KHONG co "danh sach
+# nhom duoc phep" rieng cho Zalo, dat allowlist theo UID se khoa CA nhom,
+# chi con 1 nguoi noi chuyen duoc, nguoi khac nhan yeu cau "pairing" bang
+# dong lenh ky thuat. Lenh quan tri/du lieu MAT van duoc bao ve o tang
+# khac (services/gateway/index.js, doc lap voi bien nay).
+set_if_missing ZALO_ALLOW_ALL_USERS "true"
 set_if_missing GATEWAY_ALLOW_ALL_USERS "false"
 set_if_missing SPEND_CAP_DAILY_USD "0"
 set_if_missing OPENROUTER_API_KEY ""
 set_if_missing TAVILY_API_KEY ""
 set_if_missing OPENROUTER_IMAGE_MODEL ""
 set_if_missing DASHBOARD_PASSWORD "$(gen_secret_hex 12)"
-set_if_missing ZALO_ALLOWED_USERS ""
 set_if_missing BOT_NAME "Bot"
 # Ghi lai 2 bien nay vao .env (khong chi export tam trong phien chay script
 # nay) - de moi lan sau chay "docker compose ..." truc tiep (vd ho tro ky
@@ -147,13 +145,6 @@ set_if_missing BOT_NAME "Bot"
 # duoc dat" va khong vo tinh dung sai namespace/tag mac dinh.
 set_if_missing GHCR_NAMESPACE "$GHCR_NAMESPACE"
 set_if_missing IMAGE_TAG "$IMAGE_TAG"
-
-# Kiem tra bat buoc: neu ZALO_ALLOWED_USERS van rong SAU buoc tren, canh
-# bao ro (khong chan cai dat — khach co the thiet lap sau qua wizard Phase
-# 7 — nhung phai biet no dang mo).
-if [ -z "$(grep '^ZALO_ALLOWED_USERS=' .env | cut -d= -f2-)" ]; then
-  warn "CHUA thiet lap UID chu bot. Sau khi cai xong, vao Dashboard muc 'Dieu khien Bot' de thiet lap NGAY — neu khong, lenh quan tri/du lieu mat se chua dung duoc cho ai."
-fi
 
 chmod 600 .env
 
@@ -213,8 +204,7 @@ printf '  Buoc tiep theo:\n'
 printf '  1. Mo dia chi tren bang trinh duyet, dang nhap bang mat khau tren.\n'
 printf '  2. Lam theo huong dan tung buoc de: quet QR dang nhap Zalo, nhap\n'
 printf '     API key mo hinh AI, nap kien thuc rieng, chon giong dieu.\n'
-if [ -z "$(grep '^ZALO_ALLOWED_USERS=' .env | cut -d= -f2-)" ]; then
 printf '  3. QUAN TRONG: nhan bat ky tin nhan nao cho bot tren Zalo, roi vao\n'
-printf '     Dashboard muc "Dieu khien Bot" de xac nhan minh la chu bot.\n'
-fi
+printf '     Dashboard muc "Dieu khien Bot" de xac nhan minh la chu bot (chi\n'
+printf '     chu bot moi dung duoc lenh quan tri/xem du lieu rieng tu).\n'
 printf '================================================================\n\n'
