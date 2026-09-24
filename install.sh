@@ -34,7 +34,7 @@ if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; 
 else
   say "Chua co Docker. Se cai dat tu dong bang script chinh thuc cua Docker."
   printf 'Ban co dong y cai Docker vao may nay khong? (y/n): '
-  read -r CONFIRM
+  read -r CONFIRM < /dev/tty
   case "$CONFIRM" in
     y|Y|yes|Yes) ;;
     *) die "Da huy cai dat theo yeu cau." ;;
@@ -65,14 +65,14 @@ else
   say "Chua co .env — hoi thong tin can thiet, con lai tu sinh."
   : > .env.new
   printf 'Ten hien thi THAT cua bot tren Zalo (vi du: Tro ly ABC): '
-  read -r BOT_NAME_INPUT
+  read -r BOT_NAME_INPUT < /dev/tty
   [ -n "$BOT_NAME_INPUT" ] || die "Ten bot khong duoc de trong."
 
   printf 'UID Zalo cua chu bot - NEU CHUA BIET, de trong va nhan Enter (se thiet lap sau qua Dashboard): '
-  read -r OWNER_UID_INPUT
+  read -r OWNER_UID_INPUT < /dev/tty
 
   printf 'Mat khau dang nhap Dashboard - de trong de tu sinh mat khau manh: '
-  read -r DASHBOARD_PASSWORD_INPUT
+  read -r DASHBOARD_PASSWORD_INPUT < /dev/tty
   if [ -z "$DASHBOARD_PASSWORD_INPUT" ]; then
     DASHBOARD_PASSWORD_INPUT=$(gen_secret_hex 12)
     say "Da tu sinh mat khau Dashboard, se hien lai o cuoi qua trinh cai dat."
