@@ -4,7 +4,7 @@
 #
 # Cach dung (khach dan dung 1 dong nay, GHCR_TOKEN la ma rieng cap theo
 # tung don hang, nguoi ban gui kem):
-#   curl -fsSL https://<domain-cua-nguoi-ban>/install.sh | sh -s -- <GHCR_TOKEN>
+#   curl -fsSL https://raw.githubusercontent.com/phamduyanh130996-maker/agent-zalo-release/main/install.sh | sudo sh -s -- <GHCR_TOKEN>
 #
 # Phase 6 cua ke hoach dong goi
 # (plans/260923-1504-dong-goi-docker-ban-khach-hang-khong-anh-huong-bot-dang-test).
