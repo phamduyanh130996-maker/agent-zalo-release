@@ -6,6 +6,11 @@
 # tung don hang, nguoi ban gui kem):
 #   curl -fsSL https://raw.githubusercontent.com/phamduyanh130996-maker/agent-zalo-release/main/install.sh | sudo sh -s -- <GHCR_TOKEN>
 #
+# Cai dat tu dong khong tuong tac (danh cho test/CI, KHONG can khach hang
+# biet toi) - dat truoc cac bien nay de bo qua tung cau hoi:
+#   INSTALL_AUTO_YES=y INSTALL_BOT_NAME="Ten Bot" INSTALL_OWNER_UID="" \
+#   INSTALL_DASHBOARD_PASSWORD="" sh install.sh <GHCR_TOKEN>
+#
 # Phase 6 cua ke hoach dong goi
 # (plans/260923-1504-dong-goi-docker-ban-khach-hang-khong-anh-huong-bot-dang-test).
 set -eu
@@ -33,8 +38,12 @@ if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; 
   say "Da phat hien Docker + Docker Compose, bo qua buoc cai dat."
 else
   say "Chua co Docker. Se cai dat tu dong bang script chinh thuc cua Docker."
-  printf 'Ban co dong y cai Docker vao may nay khong? (y/n): '
-  read -r CONFIRM < /dev/tty
+  if [ -n "${INSTALL_AUTO_YES:-}" ]; then
+    CONFIRM="$INSTALL_AUTO_YES"
+  else
+    printf 'Ban co dong y cai Docker vao may nay khong? (y/n): '
+    read -r CONFIRM < /dev/tty
+  fi
   case "$CONFIRM" in
     y|Y|yes|Yes) ;;
     *) die "Da huy cai dat theo yeu cau." ;;
@@ -64,15 +73,27 @@ if [ -f .env ]; then
 else
   say "Chua co .env — hoi thong tin can thiet, con lai tu sinh."
   : > .env.new
-  printf 'Ten hien thi THAT cua bot tren Zalo (vi du: Tro ly ABC): '
-  read -r BOT_NAME_INPUT < /dev/tty
+  if [ -n "${INSTALL_BOT_NAME:-}" ]; then
+    BOT_NAME_INPUT="$INSTALL_BOT_NAME"
+  else
+    printf 'Ten hien thi THAT cua bot tren Zalo (vi du: Tro ly ABC): '
+    read -r BOT_NAME_INPUT < /dev/tty
+  fi
   [ -n "$BOT_NAME_INPUT" ] || die "Ten bot khong duoc de trong."
 
-  printf 'UID Zalo cua chu bot - NEU CHUA BIET, de trong va nhan Enter (se thiet lap sau qua Dashboard): '
-  read -r OWNER_UID_INPUT < /dev/tty
+  if [ -n "${INSTALL_OWNER_UID+x}" ]; then
+    OWNER_UID_INPUT="$INSTALL_OWNER_UID"
+  else
+    printf 'UID Zalo cua chu bot - NEU CHUA BIET, de trong va nhan Enter (se thiet lap sau qua Dashboard): '
+    read -r OWNER_UID_INPUT < /dev/tty
+  fi
 
-  printf 'Mat khau dang nhap Dashboard - de trong de tu sinh mat khau manh: '
-  read -r DASHBOARD_PASSWORD_INPUT < /dev/tty
+  if [ -n "${INSTALL_DASHBOARD_PASSWORD+x}" ]; then
+    DASHBOARD_PASSWORD_INPUT="$INSTALL_DASHBOARD_PASSWORD"
+  else
+    printf 'Mat khau dang nhap Dashboard - de trong de tu sinh mat khau manh: '
+    read -r DASHBOARD_PASSWORD_INPUT < /dev/tty
+  fi
   if [ -z "$DASHBOARD_PASSWORD_INPUT" ]; then
     DASHBOARD_PASSWORD_INPUT=$(gen_secret_hex 12)
     say "Da tu sinh mat khau Dashboard, se hien lai o cuoi qua trinh cai dat."
