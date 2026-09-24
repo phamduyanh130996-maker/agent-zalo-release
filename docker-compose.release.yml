@@ -132,6 +132,11 @@ services:
       # thuong vi ZALO_ALLOW_ALL_USERS=true da duoc kiem TRUOC no.
       - GATEWAY_ALLOW_ALL_USERS=false
       - TZ=Asia/Ho_Chi_Minh
+      # San pham huong toi 100% nguoi dung Viet Nam - cac cau tra loi tinh san
+      # (locales/vi.yaml, agent/i18n.py) cua CHINH Hermes (vd lenh /reset duoc
+      # /resetcontext tai su dung) phai ra tieng Viet thay vi mac dinh tieng
+      # Anh. Khong anh huong noi dung model tu sinh (van do prompt dieu khien).
+      - HERMES_LANGUAGE=vi
     volumes:
       - hermes-brain-data:/opt/data
       - generated-files:/opt/data/zalo-files
