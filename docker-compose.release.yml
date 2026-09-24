@@ -1,0 +1,171 @@
+# docker-compose.release.yml — BAN PHAT HANH cho khach hang (Phase 4 cua
+# plans/260923-1504-dong-goi-docker-ban-khach-hang-khong-anh-huong-bot-dang-test).
+#
+# KHAC docker-compose.yml (ban dev cua chinh du an) o nhung diem sau:
+#   - zalo-gateway/hermes-brain/dashboard dung "image:" (da build san, day len
+#     GHCR) thay vi "build:" - khach KHONG can source code, KHONG can build
+#     toolchain, khong lo source code phat tan ra tung VPS khach hang.
+#   - hermes-brain KHONG con bind-mount entrypoint.sh (da COPY san vao image
+#     luc build, xem services/hermes-brain/Dockerfile.release) va KHONG con
+#     doc file .env rieng cua fork Hermes (Phase 5: gop het vao 1 file .env
+#     duy nhat, liet ke tuong minh trong "environment:", KHONG dung
+#     "env_file: .env" cho hermes-brain de tranh bom toan bo bi mat he thong
+#     vao container ma model chay lenh terminal - xem Phase 5 rui ro Critical).
+#   - ZALO_ALLOW_ALL_USERS=true (gia tri tam thoi nguy hiem cua ban dev) doi
+#     thanh ZALO_ALLOWED_USERS=${ZALO_ALLOWED_USERS} (installer Phase 6 dien
+#     dung UID chu bot that cua tung khach). Them GATEWAY_ALLOW_ALL_USERS=false
+#     tuong minh lam lop phong thu thu 2 (lop thu 1 la entrypoint.sh tu ep lai
+#     gia tri an toan trong config.yaml moi lan khoi dong - xem Phase 3 audit
+#     finding #9/#3).
+#   - dashboard publish port ra "0.0.0.0" thay vi chi "127.0.0.1" (Validation
+#     2026-09-24: khach tu truy cap tu xa qua mo cong + tuong lua + mat khau
+#     manh, khong dung SSH tunnel/Cloudflare Tunnel cho ban dau tien).
+#
+# Bien can co trong .env cua khach (installer Phase 6 tu sinh, xem
+# .env.example ban phat hanh): xem day du danh sach o
+# plans/260923-1504-.../reports/phase-03-audit-report.md muc 2.
+#
+# Anh (nguoi ban) build + day image len GHCR bang scripts/build-images.sh
+# TRUOC khi file nay dung duoc - khach hang KHONG bao gio chay lenh build.
+
+services:
+  redis-queue:
+    image: redis:7-alpine
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD}",
+        "--maxmemory-policy",
+        "noeviction",
+        "--save",
+        "60",
+        "100",
+      ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    volumes:
+      - redis-queue-data:/data
+
+  redis-session:
+    image: redis:7-alpine
+    command:
+      [
+        "redis-server",
+        "--requirepass",
+        "${REDIS_PASSWORD}",
+        "--maxmemory",
+        "128mb",
+        "--maxmemory-policy",
+        "allkeys-lru",
+      ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  zalo-gateway:
+    image: ${GHCR_NAMESPACE}/agent-zalo-gateway:${IMAGE_TAG:-latest}
+    env_file: .env
+    environment:
+      GATEWAY_PORT: "4001"
+      GENERATED_DIR: "/app/generated"
+      DASHBOARD_URL: "http://dashboard:3900"
+    volumes:
+      - zalo-creds:/root/.zalo-agent-cli
+      - generated-files:/app/generated
+      - gateway-state:/app/state
+      - audit-data:/app/audit
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    depends_on:
+      redis-queue:
+        condition: service_healthy
+      redis-session:
+        condition: service_healthy
+
+  hermes-brain:
+    image: ${GHCR_NAMESPACE}/agent-zalo-hermes-brain:${IMAGE_TAG:-latest}
+    env_file: .env
+    environment:
+      - ZALO_GATEWAY_URL=http://zalo-gateway:4001
+      - ZALO_GATEWAY_TOKEN=${INTERNAL_API_TOKEN}
+      - ZALO_BOT_NAME=${BOT_NAME}
+      - HERMES_DASHBOARD=1
+      - HERMES_DASHBOARD_HOST=0.0.0.0
+      - HERMES_DASHBOARD_PORT=9119
+      - HERMES_DASHBOARD_BASIC_AUTH_USERNAME=${HERMES_DASHBOARD_BASIC_AUTH_USERNAME}
+      - HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD}
+      - DASHBOARD_URL=http://dashboard:3900
+      - ZALO_SCOPED_TOKEN=${ZALO_SCOPED_TOKEN}
+      # [Sua Phase 3/4, thay ZALO_ALLOW_ALL_USERS=true cua ban dev] Chi dung
+      # UID chu bot that, installer (Phase 6) bat buoc dien - khong duoc de
+      # trong/mac dinh mo.
+      - ZALO_ALLOWED_USERS=${ZALO_ALLOWED_USERS}
+      # Lop phong thu thu 2 chan duong leo thang qua config.yaml (Phase 3
+      # audit finding #9/#3) - tuong minh dat false, entrypoint.sh (da bake
+      # vao image) con tu ep lai gia tri nay trong config.yaml moi lan khoi
+      # dong du phia nao ghi de.
+      - GATEWAY_ALLOW_ALL_USERS=false
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - hermes-brain-data:/opt/data
+      - generated-files:/opt/data/zalo-files
+    # KHONG con bind-mount entrypoint.sh - da COPY san vao image luc build
+    # (xem services/hermes-brain/Dockerfile.release), entrypoint mac dinh
+    # cua image tu chay dung.
+    restart: unless-stopped
+    depends_on:
+      zalo-gateway:
+        condition: service_healthy
+
+  dashboard:
+    image: ${GHCR_NAMESPACE}/agent-zalo-dashboard:${IMAGE_TAG:-latest}
+    env_file:
+      - .env
+    environment:
+      - GATEWAY_URL=http://zalo-gateway:4001
+      - HERMES_DATA_DIR=/app/hermes-data
+      - HERMES_CRON_API_URL=http://hermes-brain:9119
+      - HERMES_DASHBOARD_BASIC_AUTH_USERNAME=${HERMES_DASHBOARD_BASIC_AUTH_USERNAME}
+      - HERMES_DASHBOARD_BASIC_AUTH_PASSWORD=${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD}
+    # [Sua Phase 6, Validation 2026-09-24] Publish ra 0.0.0.0 (khac ban dev
+    # chi bind 127.0.0.1) - khach tu truy cap tu xa qua mo cong + tuong lua +
+    # mat khau manh. install.sh (Phase 6) phai cau hinh tuong lua VPS chi mo
+    # dung cong nay + SSH, va bat COOKIE_SECURE=true trong .env sinh ra.
+    ports:
+      - "0.0.0.0:3900:3900"
+    volumes:
+      - hermes-brain-data:/app/hermes-data
+      - audit-data:/app/audit:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3900/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      zalo-gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  default:
+    name: agent-zalo-net
+
+volumes:
+  redis-queue-data:
+  zalo-creds:
+  generated-files:
+  hermes-brain-data:
+  audit-data:
+  gateway-state:
