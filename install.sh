@@ -129,7 +129,10 @@ set_if_missing HERMES_DASHBOARD_BASIC_AUTH_PASSWORD "$(gen_secret_hex 24)"
 # Gia tri san production co dinh — luon dam bao dung, khong cho phep sot lai
 # gia tri dev nguy hiem tu 1 ban .env cu bi copy nham.
 set_if_missing ZALO_CLI_MODE "real"
-set_if_missing COOKIE_SECURE "true"
+# [Sua 2026-09-24, phat hien qua Phase 8 test that] PHAI la "false" - Dashboard
+# mo qua HTTP thuong (khong TLS), "true" khien trinh duyet am tham khong luu
+# phien dang nhap, khach dang nhap xong bi bat nguoc ve /login ngay lap tuc.
+set_if_missing COOKIE_SECURE "false"
 set_if_missing GATEWAY_ALLOW_ALL_USERS "false"
 set_if_missing SPEND_CAP_DAILY_USD "0"
 set_if_missing OPENROUTER_API_KEY ""
