@@ -17,7 +17,7 @@ set -eu
 
 GHCR_TOKEN="${1:?Thieu ma cai dat. Lien he nguoi ban de lay dung dong lenh cai dat cho don hang cua ban.}"
 GHCR_NAMESPACE="${GHCR_NAMESPACE:-ghcr.io/phamduyanh130996-maker}"
-IMAGE_TAG="${IMAGE_TAG:-v1.1.5}"
+IMAGE_TAG="${IMAGE_TAG:-v1.1.6}"
 INSTALL_DIR="${INSTALL_DIR:-$HOME/agent-zalo}"
 COMPOSE_URL="${COMPOSE_URL:-https://raw.githubusercontent.com/phamduyanh130996-maker/agent-zalo-release/main/docker-compose.release.yml}"
 ENV_EXAMPLE_URL="${ENV_EXAMPLE_URL:-https://raw.githubusercontent.com/phamduyanh130996-maker/agent-zalo-release/main/.env.example}"
